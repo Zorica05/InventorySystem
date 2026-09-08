@@ -1,0 +1,23 @@
+.dashboard-sections {
+  display: grid !important;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr) !important;
+  gap: 24px !important;
+  margin-top: 24px !important;
+}
+
+.recent-products,
+.low-stock-section {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  padding: 22px !important;
+}
+
+.recent-products .products-table-container {
+  border: 1px solid #e5e7eb !important;
+  margin-top: 0 !important;
+}
+
+.low-stock-section {
+  min-width: 0;
+}
