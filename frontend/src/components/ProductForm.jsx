@@ -6,27 +6,81 @@ function ProductForm({ product, onClose, onProductSaved }) {
   const [name, setName] = useState("");
   const [sku, setSku] = useState("");
   const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState([]);
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState("");
   const [minQuantity, setMinQuantity] = useState("");
+  const [categoryError, setCategoryError] = useState("");
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        setCategoryError("");
+
+        const response = await fetch(
+          "http://localhost:8080/categories.php"
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load categories.");
+        }
+
+        const loadedCategories = Array.isArray(data) ? data : [];
+
+        setCategories(loadedCategories);
+
+        if (product) {
+          const existingCategory = loadedCategories.find(
+            (item) => item.name === product.category
+          );
+
+          setCategory(
+            existingCategory ? existingCategory.name : ""
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setCategoryError("Failed to load categories.");
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    loadCategories();
+  }, [product]);
 
   useEffect(() => {
     if (product) {
-      setName(product.name);
-      setSku(product.sku);
-      setCategory(product.category);
-      setPrice(product.price);
-      setQuantity(product.quantity);
-      setMinQuantity(product.min_quantity);
+      setName(product.name || "");
+      setSku(product.sku || "");
+      setPrice(product.price ?? "");
+      setQuantity(product.quantity ?? "");
+      setMinQuantity(product.min_quantity ?? "");
+    } else {
+      setName("");
+      setSku("");
+      setCategory("");
+      setPrice("");
+      setQuantity("");
+      setMinQuantity("");
     }
   }, [product]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    if (!category) {
+      setCategoryError("Please select a category.");
+      return;
+    }
+
     const productData = {
-      name,
-      sku,
+      name: name.trim(),
+      sku: sku.trim(),
       category,
       price,
       quantity,
@@ -119,13 +173,33 @@ function ProductForm({ product, onClose, onProductSaved }) {
             <div className="form-group">
               <label>Category</label>
 
-              <input
-                type="text"
+              <select
                 value={category}
-                onChange={(event) => setCategory(event.target.value)}
-                placeholder="e.g. Mouse"
+                onChange={(event) => {
+                  setCategory(event.target.value);
+                  setCategoryError("");
+                }}
                 required
-              />
+                disabled={loadingCategories}
+              >
+                <option value="">
+                  {loadingCategories
+                    ? "Loading categories..."
+                    : "Select category"}
+                </option>
+
+                {categories.map((item) => (
+                  <option key={item.id} value={item.name}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+
+              {categoryError && (
+                <p className="category-error">
+                  {categoryError}
+                </p>
+              )}
             </div>
           </div>
 
@@ -180,7 +254,11 @@ function ProductForm({ product, onClose, onProductSaved }) {
               Cancel
             </button>
 
-            <button type="submit" className="save-button">
+            <button
+              type="submit"
+              className="save-button"
+              disabled={loadingCategories}
+            >
               {isEditing ? "Update Product" : "Save Product"}
             </button>
           </div>
